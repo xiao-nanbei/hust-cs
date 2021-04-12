@@ -9,19 +9,19 @@ INCLUDELIB LEGACY_STDIO_DEFINITIONS.LIB
 .DATA
 lpFmt1	DB	"%s",0ah,0dh,0
 lpFmt2	DB	"%s",0
-lpFmt3	DB  "%d",0
+lpFmt3	DB  	"%d",0
 lpFmt4	DB	"%hd",0ah,0dh,0
 BNAME   DB	'TANXUAN',0 
 BPASS   DB	'U201915033',0
 GA1	DB	'PEN' ,7 DUP(0)
 	DW	15, 20, 70, 25, ?
-GA2	DB  'PENCIL', 4 DUP(0) 
-    DW	2, 3, 100, 50, ?
-GA3 DB	'BOOK', 6 DUP(0)
+GA2	DB  	'PENCIL', 4 DUP(0) 
+    	DW  	2, 3, 100, 50, ?
+GA3 	DB	'BOOK', 6 DUP(0)
 	DW	30, 40, 25, 5, ?
-GA4 DB	'RULER', 5 DUP(0)
+GA4 	DB	'RULER', 5 DUP(0)
 	DW	3, 4, 200, 150, ?
-OP dd ?
+OP 	dd	?
 SOLD_NUM	DW	?
 SUPPLE_NUM	DW	?
 USER_LOG	DB	'Please enter your username:',0
