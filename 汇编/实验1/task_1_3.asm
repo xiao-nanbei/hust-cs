@@ -21,7 +21,7 @@ GA3 	DB	'BOOK', 6 DUP(0)
 	DW	30, 40, 25, 5, ?
 GA4 	DB	'RULER', 5 DUP(0)
 	DW	3, 4, 200, 150, ?
-OP 	dd	?
+OP 	DD	?
 SOLD_NUM	DW	?
 SUPPLE_NUM	DW	?
 USER_LOG	DB	'Please enter your username:',0
