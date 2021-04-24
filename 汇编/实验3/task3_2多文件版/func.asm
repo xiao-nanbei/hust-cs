@@ -1,0 +1,383 @@
+.686P
+.MODEL FLAT,STDCALL
+ExitProcess PROTO STDCALL:DWORD
+Sleep proto stdcall :dword
+INCLUDELIB KERNEL32.LIB
+printf PROTO C:VARARG
+scanf PROTO C:VARARG
+strcpy proto C:VARARG
+INCLUDELIB LIBCMT.LIB
+INCLUDELIB LEGACY_STDIO_DEFINITIONS.LIB
+FLAG_TO_0 macro v1
+	PUSH EAX
+	MOV	EAX,0
+	MOV v1,EAX
+	POP	EAX
+endm
+FLAG_TO_1 macro v1
+	PUSH EAX
+	MOV	EAX,1
+	MOV	v1,EAX
+	POP EAX
+endm
+GOODS  STRUCT
+GOODSNAME  DB 10 DUP(0)
+BUYPRICE   DW  0
+SELLPRICE  DW  0
+BUYNUM     DW  0
+SELLNUM    DW  0
+RATE       DW  0
+GOODS  ENDS
+.DATA
+lpFmt1	DB	"%s",0ah,0dh,0
+lpFmt2	DB	"%s",0
+lpFmt3	DB  "%d",0
+lpFmt4	DB	"%hd",0ah,0dh,0
+lpFmt   DB	"%d seconds",0ah, 0dh, 0
+freq_l  dword  0
+freq_h  dword  0
+N     EQU   30
+GA1	GOODS <'PEN',15, 20, 70, 25, ?>
+GA2	GOODS <'PENCIL',2, 3, 100, 50, ?>
+GA3	GOODS <'BOOK',30, 40, 25, 5, ?>
+GA4	GOODS <'RULER',3, 4, 200, 150, ?>
+GAN GOODS 20 DUP(<'TempValue',15,20,30,2,?>)
+SOLD_NUM	DW	?
+SUPPLE_NUM	DW	?
+FIND_ITEM	DB	'Please enter the item name:',0
+FIND_FAIL	DB	'Fail to find',0
+SOLD_ITEM	DB	'Please input the quantity you want to sell',0
+NOT_ENOUGH	DB	'It is not enough',0
+SUPPLE_ITEM	DB	'Please input how many goods you want to replenish',0
+IN_ITEM		DB	10 DUP(0)
+I_NUM		DD	0
+MAX_NUM		DW	0
+MIN_NUM		DW	0
+TEMP		DD	0
+J_NUM		DD	0
+FLAG_SOLD	DD	0
+FLAG_EQULES DD	1
+ADDNAME DB  'TempValue',0
+GA5	GOODS <'MAX',0,0,0,0,255>
+;添加商品
+FUNCONE3  DB  '商品进价:',0
+FUNCONE4  DB  '商品售价:',0
+FUNCONE5  DB  '进货数量:',0
+FUNCONE6  DB  '已售数量:',0
+NEWOK DB '新增商品成功!',0
+NOADD DB '无法再添加商品！',0
+NEWNAME DB '请输入新增商品名称:',0
+NEWPRODUCTPPRICE DW  0,0
+NEWPRODUCTSPRICE  DW  0 ,0  
+NEWPURCHASENUM   DW  0  ,0
+NEWSOLDNUM  DW  0 ,0     
+NEWPRODUCTNAME  DB 0
+ADD_TEMP DD 0
+GA_NUM DD 4
+.STACK 200
+.CODE
+public FIND_FUN
+public SOLD_FUN
+PUBLIC SUPPLE_FUN
+PUBLIC CLU_FUN
+PUBLIC SORT_FUN
+PUBLIC CLO_FUN
+PUBLIC ADD_FUN
+EQULES_FUN proc
+	ADD ESI,EBX
+	MOV ECX,0AH
+	REPE CMPSB
+	JZ EQULES_FUN_EXIT
+	SET_FLAG:
+		FLAG_TO_0 FLAG_EQULES
+	EQULES_FUN_EXIT:
+		SUB ESI,10
+		SUB EDI,10
+		ret
+EQULES_FUN endp
+FIND_FUN proc
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_ITEM
+	INVOKE scanf,OFFSET lpFmt2,OFFSET IN_ITEM
+	MOV EBX,0
+	MOV EAX,GA_NUM
+	MOV	I_NUM,EAX
+	FLAG_TO_1 FLAG_EQULES
+	PWORK:
+		LEA ESI,GA1
+		LEA	EDI,IN_ITEM
+		CALL EQULES_FUN
+		CMP FLAG_EQULES,1
+		JZ	OUT_PUT
+		MOV	EAX,1
+		MOV	FLAG_EQULES,EAX
+		ADD EBX,20
+		DEC I_NUM
+		JNZ PWORK
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_FAIL
+	JMP	FIND_FUN_EXIT
+	OUT_PUT:
+		INVOKE printf,OFFSET lpFmt1,OFFSET IN_ITEM
+		INVOKE printf,OFFSET lpFmt4,GA1[EBX][10]
+		INVOKE printf,OFFSET lpFmt4,GA1[EBX][12]
+		INVOKE printf,OFFSET lpFmt4,GA1[EBX][14]
+		INVOKE printf,OFFSET lpFmt4,GA1[EBX][16]
+		INVOKE printf,OFFSET lpFmt4,WORD PTR GA1[EBX][18]
+	FIND_FUN_EXIT:
+		ret
+FIND_FUN endp
+SOLD_FUN proc
+SOLD:
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_ITEM
+	INVOKE scanf,OFFSET lpFmt2,OFFSET IN_ITEM
+	INVOKE printf,OFFSET lpFmt1,OFFSET SOLD_ITEM
+	INVOKE scanf,OFFSET lpFmt3,OFFSET SOLD_NUM
+	MOV EBX,0
+	MOV EAX,GA_NUM
+	MOV	I_NUM,EAX
+	FLAG_TO_1 FLAG_EQULES
+	SOLD_PWORK:
+		LEA ESI,GA1
+		LEA	EDI,IN_ITEM
+		CALL EQULES_FUN
+		CMP FLAG_EQULES,1
+		JZ	OUT_SOLD
+		MOV	EAX,1
+		MOV	FLAG_EQULES,EAX
+		ADD EBX,20
+		DEC I_NUM
+		JNZ SOLD_PWORK
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_FAIL
+	JMP	SOLD_FUN_EXIT
+	OUT_SOLD:
+		MOV AX,WORD PTR GA1[EBX][14]
+		MOV CX,WORD PTR GA1[EBX+16]
+		CMP AX,SOLD_NUM
+		JB	NOT_EN
+		SUB AX,SOLD_NUM
+		CMP AX,CX
+		JB	NOT_EN
+		ADD CX,SOLD_NUM
+		MOV WORD PTR GA1[EBX+16],CX
+		JMP SOLD_FUN_EXIT
+		NOT_EN:
+		INVOKE printf,OFFSET lpFmt1,OFFSET NOT_ENOUGH
+	SOLD_FUN_EXIT:
+		ret
+SOLD_FUN endp
+SUPPLE_FUN	proc
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_ITEM
+	INVOKE scanf,OFFSET lpFmt2,ADDR[IN_ITEM]
+	INVOKE printf,OFFSET lpFmt1,OFFSET SUPPLE_ITEM
+	INVOKE scanf,OFFSET lpFmt3,OFFSET SUPPLE_NUM
+	MOV EBX,0
+	MOV EAX,GA_NUM
+	MOV	I_NUM,EAX
+	FLAG_TO_1 FLAG_EQULES
+	SUPPLE_PWORK:
+		LEA ESI,GA1
+		LEA	EDI,IN_ITEM
+		CALL EQULES_FUN
+		CMP FLAG_EQULES,1
+		JZ	OUT_SUPPLE
+		MOV	EAX,1
+		MOV	FLAG_EQULES,EAX
+		ADD EBX,20
+		DEC I_NUM
+		JNZ	SUPPLE_PWORK
+	INVOKE printf,OFFSET lpFmt1,OFFSET FIND_FAIL
+	JMP	SUPPLE_FUN_EXIT
+	OUT_SUPPLE:
+		MOV AX,WORD PTR GA1[EBX][14]
+		ADD AX,SUPPLE_NUM
+		MOV WORD PTR GA1[EBX+14],AX
+	SUPPLE_FUN_EXIT:
+		ret
+SUPPLE_FUN endp 
+CLU_FUN	proc
+	MOV ESI,0
+	MOV EDI,GA_NUM
+	CLU_PWORK_FUN:
+		MOV EAX,0
+		MOV EBX,0
+		MOV AX,WORD PTR GA1[ESI+12]
+		IMUL AX,WORD PTR GA1[ESI+16]
+		MOV BX,WORD PTR GA1[ESI+10]
+		IMUL BX,WORD PTR GA1[ESI+14]
+		SUB AX,BX
+		MOVSX EAX,AX
+		MOVSX EBX,BX
+		IMUL EAX,100
+		CDQ
+		IDIV EBX
+		MOV WORD PTR[GA1+ESI+18],AX
+		INVOKE printf,OFFSET lpFmt4,WORD PTR GA1[ESI+18]
+		ADD ESI,20
+		DEC EDI
+		JNZ CLU_PWORK_FUN
+	CLU_FUN_EXIT:
+		ret
+CLU_FUN endp
+SORT_FUN proc 
+	MOV EDI,GA_NUM
+	MOV CX,WORD PTR GA5[18]
+	MOV	I_NUM,EDI
+	SORT_PWORK_1_FUN:
+		MOV EDI,0
+		MOV	FLAG_SOLD,0
+		MOV ESI,GA_NUM
+		MOV J_NUM,ESI
+		MOV	ESI,0
+		MOV EAX,0
+		MOV EBX,0
+		MOV DX,WORD PTR GA1[ESI+18]
+		MOV MAX_NUM,DX
+		SORT_PWORK_2_FUN:
+			MOV DX,WORD PTR GA1[ESI+18]
+			CMP DX,MAX_NUM
+			JGE	OUT_SORT_FUN
+			GET_FUN:
+			ADD	ESI,20
+			DEC J_NUM
+			JNZ	SORT_PWORK_2_FUN
+			CMP FLAG_SOLD,0
+			JE SOLD_END_FUN
+			MOV EBX,OFFSET GA1
+			ADD	EBX,EDI
+			INVOKE printf,OFFSET lpFmt1,EBX
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][10]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][12]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][14]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][16]
+			INVOKE printf,OFFSET lpFmt4,WORD PTR GA1[EDI][18]
+			MOV CX,MAX_NUM
+		DEC I_NUM
+		JNZ	SORT_PWORK_1_FUN
+	OUT_SORT_FUN:
+		CMP	DX,CX
+		JGE	OUT_SORT_2_FUN
+		MOV	MAX_NUM,DX
+		MOV	EDI,ESI
+		ADD FLAG_SOLD,1
+		OUT_SORT_2_FUN:
+			JMP GET_FUN
+	SOLD_END_FUN:
+		MOV EAX,GA_NUM
+		MOV J_NUM,EAX
+		MOV	ESI,0
+		MOV DX,WORD PTR GA1[ESI+18]
+		MOV MIN_NUM,DX
+		SOLD_END_PWOEK_FUN:
+			MOV DX,WORD PTR GA1[ESI+18]
+			CMP DX,MIN_NUM
+			JL	OUT_SOLD_END_FUN
+			GET_END_FUN:
+			ADD ESI,20
+			DEC J_NUM
+			JNZ	SOLD_END_PWOEK_FUN
+			MOV EBX,OFFSET GA1
+			ADD	EBX,EDI
+			INVOKE printf,OFFSET lpFmt1,EBX
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][10]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][12]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][14]
+			INVOKE printf,OFFSET lpFmt4,GA1[EDI][16]
+			INVOKE printf,OFFSET lpFmt4,WORD PTR GA1[EDI][18]
+		JMP	SORT_FUN_EXIT
+		OUT_SOLD_END_FUN:
+			MOV MIN_NUM,DX
+			MOV EDI,ESI
+			JMP	GET_END_FUN
+	SORT_FUN_EXIT:
+		ret
+SORT_FUN endp
+CLO_FUN proc
+	rdtsc
+    sub eax, ecx
+    sbb edx, ebx  
+    mov freq_l, eax
+    mov freq_h, edx 
+    rdtsc         
+	mov ecx, eax
+	mov ebx, edx
+	push ecx
+	push ebx
+    mov ecx,1000
+L1:
+    PUSH ecx
+    call  CLU_FUN
+    call  SORT_FUN
+    pop ecx
+    dec ecx 
+    jnz L1
+
+	rdtsc
+	pop ebx
+	pop ecx
+	sub eax, ecx
+	sbb edx, ebx  
+	div freq_l
+	invoke printf, offset lpFmt, eax
+CLO_FUN endp
+CHANGE proc x:dword,y:dword;x传入的是新增的商品名称（NEWNAME）,y传入的是要修改的tempvalue处的地址
+pushad
+mov eax,x
+mov ebx,y
+CHANGE_L1:
+mov dl,[eax]
+cmp dl,0;当前字符串修改未结束
+jz CHANGE_exit1
+mov [ebx],dl
+inc eax
+inc ebx
+jmp CHANGE_L1
+CHANGE_exit1:
+mov dl,[ebx]
+cmp dl,0
+jz CHANGE_exit2
+mov byte ptr[ebx],0
+inc ebx
+jmp CHANGE_exit1
+CHANGE_exit2:
+popad
+ret 
+CHANGE endp  
+ADD_FUN proc
+	MOV EBX,ADD_TEMP
+	LEA ESI,GAN
+	ADD_FUN_L1:
+		LEA EDI,ADDNAME
+		CALL EQULES_FUN
+		CMP FLAG_EQULES,0
+		JZ	ADD_FUN_L2
+		invoke  printf,offset lpFmt1,offset NEWNAME
+		invoke  scanf,offset lpFmt2,offset NEWPRODUCTNAME
+		invoke  printf,offset lpFmt1,offset FUNCONE3 
+		invoke  scanf,offset lpFmt3,offset NEWPRODUCTPPRICE
+		invoke  printf,offset lpFmt1,offset FUNCONE4 
+		invoke  scanf,offset lpFmt3,offset NEWPRODUCTSPRICE
+		invoke  printf,offset lpFmt1,offset FUNCONE5 
+		invoke  scanf,offset lpFmt3,offset  NEWPURCHASENUM
+		invoke  printf,offset lpFmt1,offset FUNCONE6 
+		invoke  scanf,offset lpFmt3,offset NEWSOLDNUM 
+		invoke CHANGE,offset NEWPRODUCTNAME,ESI
+		mov dx,NEWPRODUCTPPRICE
+		mov [ESI].GOODS.BUYPRICE,dx
+		mov dx,NEWPRODUCTSPRICE
+		mov [ESI].GOODS.SELLPRICE,dx
+		mov dx,NEWPURCHASENUM
+		mov [ESI].GOODS.BUYNUM,dx
+		mov dx,NEWSOLDNUM 
+		mov [ESI].GOODS.SELLNUM,dx
+		mov [ESI].GOODS.RATE,0
+		invoke printf,offset lpFmt1,offset NEWOK
+		add EBX,20
+		MOV ADD_TEMP,EBX
+		ADD GA_NUM,1
+		ret
+	ADD_FUN_L2:
+		FLAG_TO_1 FLAG_EQULES
+	ADD_FUN_EXIT:
+		invoke  printf,offset lpFmt1,offset NOADD
+		ret
+ADD_FUN endp
+END
